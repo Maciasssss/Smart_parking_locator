@@ -1,11 +1,15 @@
-// models/parking_spot.dart
+// lib/models/parking_spot.dart
+
+import 'dart:convert';
 
 class ParkingSpot {
   final String id;
-  final String name; // Name for the parking area
+  final String name;
   final double positionLat;
   final double positionLng;
-  List<String> carPositions; // List of car icon positions as strings
+  List<String> carPositions;
+  List<String> bookedPositions; // New field
+  String? imagePath;
 
   ParkingSpot({
     required this.id,
@@ -13,6 +17,8 @@ class ParkingSpot {
     required this.positionLat,
     required this.positionLng,
     required this.carPositions,
+    required this.bookedPositions,
+    this.imagePath,
   });
 
   Map<String, dynamic> toMap() {
@@ -21,7 +27,9 @@ class ParkingSpot {
       'name': name,
       'position_lat': positionLat,
       'position_lng': positionLng,
-      'car_positions': carPositions.join(','), // Convert list to string for storage
+      'car_positions': jsonEncode(carPositions),
+      'booked_positions': jsonEncode(bookedPositions), // New field
+      'image_path': imagePath,
     };
   }
 
@@ -31,7 +39,13 @@ class ParkingSpot {
       name: map['name'],
       positionLat: map['position_lat'],
       positionLng: map['position_lng'],
-      carPositions: (map['car_positions'] as String).split(',').toList(), // Convert string back to list
+      carPositions: map['car_positions'] != null && map['car_positions'].isNotEmpty
+          ? List<String>.from(jsonDecode(map['car_positions']))
+          : [],
+      bookedPositions: map['booked_positions'] != null && map['booked_positions'].isNotEmpty
+          ? List<String>.from(jsonDecode(map['booked_positions']))
+          : [],
+      imagePath: map['image_path'],
     );
   }
 }

@@ -1,74 +1,66 @@
-// providers/parking_spot_provider.dart
+// lib/providers/parking_spot_provider.dart
+
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
-import '../models/parking_spot.dart'; // Ensure you're importing the right model
+import '../helpers/database_helper.dart';
+import '../models/parking_spot.dart';
 
 class ParkingSpotProvider with ChangeNotifier {
-  Database? _database;
+  List<ParkingSpot> _parkingSpots = [];
 
-  // Initialize the database
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDb();
-    return _database!;
+  List<ParkingSpot> get parkingSpots => _parkingSpots;
+
+  final DatabaseHelper _dbHelper = DatabaseHelper();
+
+  ParkingSpotProvider() {
+    loadParkingSpots();
   }
 
-  Future<Database> _initDb() async {
-    return await openDatabase(
-      join(await getDatabasesPath(), 'parking_spots.db'),
-      onCreate: (db, version) {
-        return db.execute(
-          'CREATE TABLE parking_spots('
-          'id TEXT PRIMARY KEY, '
-          'name TEXT, '
-          'position_lat REAL, '
-          'position_lng REAL, '
-          'car_positions TEXT)', // Include car_positions in the table schema
-        );
-      },
-      version: 1,
-    );
+  /// Loads all parking spots from the database.
+  Future<void> loadParkingSpots() async {
+    _parkingSpots = await _dbHelper.fetchParkingSpots();
+    notifyListeners();
   }
 
-  // Method to save a parking spot
+  /// Saves a parking spot to the database.
   Future<void> saveParkingSpot(ParkingSpot spot) async {
-    final db = await database;
-    await db.insert(
-      'parking_spots',
-      spot.toMap(), // Convert the ParkingSpot model to a map for storage
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-    notifyListeners(); // Notify listeners about the change
+    await _dbHelper.saveParkingSpot(spot);
+    await loadParkingSpots(); // Reload to update the list
   }
 
-  // Method to fetch all parking spots
-  Future<List<ParkingSpot>> fetchParkingAreas() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('parking_spots');
-
-    return List.generate(maps.length, (i) {
-      return ParkingSpot(
-        id: maps[i]['id'],
-        name: maps[i]['name'],
-        positionLat: maps[i]['position_lat'],
-        positionLng: maps[i]['position_lng'],
-        carPositions: (maps[i]['car_positions'] as String).split(',').toList(), // Convert string back to list
-      );
-    });
+  /// Retrieves a parking spot by its ID.
+  Future<ParkingSpot?> getParkingSpotById(String id) async {
+    return await _dbHelper.getParkingSpotById(id);
   }
 
-  // Method to save reservation details
-  Future<void> saveReservation(String markerId, int carSpots) async {
-    final db = await database;
-    await db.insert(
-      'reservations',
-      {
-        'markerId': markerId,
-        'carSpots': carSpots,
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-    notifyListeners(); // Notify listeners about the change
+  /// Updates an existing parking spot.
+  Future<void> updateParkingSpot(ParkingSpot spot) async {
+    await _dbHelper.updateParkingSpot(spot);
+    await loadParkingSpots();
   }
+
+  /// Deletes a parking spot by its ID.
+  Future<void> deleteParkingSpot(String id) async {
+    await _dbHelper.deleteParkingSpot(id);
+    await loadParkingSpots();
+  }
+
+  /// Books a parking spot by adding a booked position.
+  Future<void> bookParkingSpot(String spotId, String position) async {
+    ParkingSpot? spot = await getParkingSpotById(spotId);
+    if (spot != null) {
+      spot.bookedPositions.add(position);
+      await updateParkingSpot(spot);
+    }
+  }
+
+  /// Checks if a position in a parking spot is booked.
+ bool isPositionBooked(String spotId, String position) {
+  try {
+    ParkingSpot spot = _parkingSpots.firstWhere((s) => s.id == spotId);
+    return spot.bookedPositions.contains(position);
+  } catch (e) {
+    // No matching spot found
+    return false;
+  }
+}
 }

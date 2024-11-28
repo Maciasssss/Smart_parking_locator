@@ -22,6 +22,8 @@ dependencies:
   uuid: ^3.0.6
   sqflite: ^2.0.0
   path_provider: ^2.0.0
+  shared_preferences: ^2.0.15
+  image_picker: ^0.8.5+3
   
 dev_dependencies:
   flutter_test:

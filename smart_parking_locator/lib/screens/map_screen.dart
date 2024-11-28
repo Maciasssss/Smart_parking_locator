@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import '../providers/parking_spot_provider.dart'; // Ensure correct import
 import '../screens/login_screen.dart';
+import '../helpers/database_helper.dart';
 
 class MapScreen extends StatefulWidget {
   @override
@@ -32,7 +33,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _loadMarkers() async {
-    final parkingAreas = await Provider.of<ParkingSpotProvider>(context, listen: false).fetchParkingAreas();
+    final parkingAreas = await Provider.of<DatabaseHelper>(context, listen: false).fetchParkingSpots();
     
     // Update to use the model correctly
     Set<gmaps.Marker> markers = parkingAreas.map((area) {

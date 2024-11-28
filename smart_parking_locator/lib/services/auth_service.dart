@@ -4,14 +4,14 @@ class AuthService with ChangeNotifier {
   bool _isAdmin = false; // Default user role
 
   // Dummy user data for testing; replace with your actual logic.
-  final List<String> _adminEmails = ['admin@example.com']; // Admin email addresses
+  final List<String> _adminEmails = ['admin']; // Admin email addresses
 
   // Simulated login method
   Future<bool> login(String email, String password) async {
     await Future.delayed(Duration(seconds: 1)); // Simulate network delay
 
     // Replace this with your actual authentication logic
-    if (_adminEmails.contains(email) && password == 'adminpassword') {
+    if (_adminEmails.contains(email) && password == 'admin') {
       _isAdmin = true; // Set admin if the email matches
       notifyListeners(); // Notify listeners about the change
       return true; // Login successful

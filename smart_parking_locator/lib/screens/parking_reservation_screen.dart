@@ -1,56 +1,107 @@
+// lib/screens/parking_reservation_creation_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
-import 'package:smart_parking_locator/helpers/database_helper.dart';
+import 'package:provider/provider.dart';
 import 'package:smart_parking_locator/models/parking_spot.dart';
+import 'dart:io';
+
+import 'package:smart_parking_locator/providers/parking_spot_provider.dart';
 
 class ParkingReservationCreationScreen extends StatefulWidget {
-  final String markerId; // Add this to receive the marker ID
+  final String markerId;
 
-  ParkingReservationCreationScreen({required this.markerId}); // Constructor to accept markerId
+  ParkingReservationCreationScreen({required this.markerId});
 
   @override
   _ParkingReservationCreationScreenState createState() => _ParkingReservationCreationScreenState();
 }
 
 class _ParkingReservationCreationScreenState extends State<ParkingReservationCreationScreen> {
-  List<gmaps.LatLng> _carPositions = []; // Store car positions as LatLng
+  List<Offset> _carPositions = []; // Store car positions as screen offsets
+  ParkingSpot? _parkingSpot; // Store the parking spot
+
+  @override
+  void initState() {
+    super.initState();
+    _loadParkingSpot();
+  }
+
+  Future<void> _loadParkingSpot() async {
+    // Fetch the parking spot from the provider
+    ParkingSpotProvider provider = Provider.of<ParkingSpotProvider>(context, listen: false);
+    ParkingSpot? spot = await provider.getParkingSpotById(widget.markerId);
+
+    if (spot != null) {
+      setState(() {
+        _parkingSpot = spot;
+        _carPositions = spot.carPositions.map((posString) {
+          try {
+            List<String> xy = posString.split(',');
+            if (xy.length != 2) {
+              throw FormatException('Invalid position format: $posString');
+            }
+            double dx = double.parse(xy[0]);
+            double dy = double.parse(xy[1]);
+            return Offset(dx, dy);
+          } catch (e) {
+            print('Error parsing position: $e');
+            return null; // Skip this position if there's an error
+          }
+        }).where((pos) => pos != null).cast<Offset>().toList();
+      });
+    } else {
+      // Initialize a new parking spot if it doesn't exist
+      _parkingSpot = ParkingSpot(
+        id: widget.markerId,
+        name: 'Parking Area ${widget.markerId}',
+        positionLat: 0.0, // Not used in this context
+        positionLng: 0.0, // Not used in this context
+        carPositions: [],
+        bookedPositions: [],
+        imagePath: null, // Initialize with null
+      );
+    }
+  }
 
   void _addCarIcon() {
     setState(() {
-      // Adding a car icon at a default position (can be customized)
-      _carPositions.add(gmaps.LatLng(37.7749, -122.4194)); // Example default position
-    });
-  }
-
-  void _moveCarIcon(int index, gmaps.LatLng newPosition) {
-    setState(() {
-      _carPositions[index] = newPosition; // Update the position of the car icon
+      // Adding a car icon at a default position (e.g., center of the screen)
+      _carPositions.add(Offset(100, 100)); // Adjust the default position as needed
     });
   }
 
   Future<void> _saveParkingSpot() async {
-  // Create a new ParkingSpot object with the updated data
-  ParkingSpot newSpot = ParkingSpot(
-    id: widget.markerId, // Use the marker ID passed to the screen
-    name: 'Parking Area ${widget.markerId}', // Example name
-    positionLat: 37.7749, // Set the appropriate latitude for the parking area
-    positionLng: -122.4194, // Set the appropriate longitude for the parking area
-    carPositions: _carPositions.map((pos) => '${pos.latitude},${pos.longitude}').toList(), // Save car positions
-  );
+  if (_parkingSpot != null) {
+    // Update carPositions
+    _parkingSpot!.carPositions = _carPositions.map((pos) => '${pos.dx},${pos.dy}').toList();
 
-  // Save the parking spot to the database
-  await DatabaseHelper().saveParkingSpot(newSpot);
-  
-  // Navigate back after saving
-  Navigator.pop(context);
+    // Use the provider to save (update) the parking spot
+    await Provider.of<ParkingSpotProvider>(context, listen: false).saveParkingSpot(_parkingSpot!);
+
+    // Show a snackbar notification
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Parking spot saved successfully!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    // Wait for the snackbar to be visible before navigating back
+    await Future.delayed(Duration(seconds: 2));
+
+    // Navigate back after saving
+    Navigator.pop(context);
+  } else {
+    // Handle the case where _parkingSpot is null if necessary
+    // You can show an error message or handle it appropriately
+  }
 }
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Create Parking Reservation'),
+        title: Text('Manage Parking Cars'),
         actions: [
           IconButton(
             icon: Icon(Icons.save),
@@ -63,26 +114,28 @@ class _ParkingReservationCreationScreenState extends State<ParkingReservationCre
           color: Colors.white, // White background for the editing area
           child: Stack(
             children: [
-              // Add a placeholder for the reservation board (like a cinema layout)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.grey[200], // Light grey background for the reservation board
+              // Display the parking area image if available
+              if (_parkingSpot?.imagePath != null)
+                Positioned.fill(
+                  child: Image.file(
+                    File(_parkingSpot!.imagePath!),
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-              // Display the car icons using a Positioned widget
+              // Display the car icons using Positioned widgets
               ..._carPositions.asMap().entries.map((entry) {
                 int index = entry.key;
-                gmaps.LatLng position = entry.value;
+                Offset position = entry.value;
 
                 return Positioned(
-                  left: (position.longitude + 122.4194) * (MediaQuery.of(context).size.width / 0.1), // Calculate left position
-                  top: (37.7749 - position.latitude) * (MediaQuery.of(context).size.height / 0.01), // Calculate top position
+                  left: position.dx,
+                  top: position.dy,
                   child: GestureDetector(
                     onPanUpdate: (details) {
                       // Update the position of the car icon while dragging
-                      double newLat = position.latitude - (details.delta.dy / MediaQuery.of(context).size.height) * 0.01 * 2; // Increase the multiplier for faster drag
-                      double newLng = position.longitude + (details.delta.dx / MediaQuery.of(context).size.width) * 0.01 * 5; // Increase the multiplier for faster drag
-                      _moveCarIcon(index, gmaps.LatLng(newLat, newLng));
+                      setState(() {
+                        _carPositions[index] = _carPositions[index] + details.delta;
+                      });
                     },
                     child: Icon(Icons.directions_car, color: Colors.blue, size: 30), // Car icon representation
                   ),

@@ -1,47 +1,101 @@
-import 'package:smart_parking_locator/models/parking_spot.dart';
+// lib/helpers/database_helper.dart
+
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import '../models/parking_spot.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
-  
-  static Database? _database;
 
   DatabaseHelper._internal();
 
+  Database? _database;
+
+  static const int _dbVersion = 4; // Incremented version
+
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDatabase();
+    _database = await _initDB();
     return _database!;
   }
 
-  Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'parking.db');
+  Future<Database> _initDB() async {
+    String path = join(await getDatabasesPath(), 'parking_spots.db');
     return await openDatabase(
       path,
-      version: 1,
-      onCreate: (db, version) {
-        return db.execute(
-          'CREATE TABLE parking_spots(id TEXT PRIMARY KEY, name TEXT, position_lat REAL, position_lng REAL, car_positions TEXT)',
-        );
-      },
+      version: _dbVersion,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
-   Future<void> saveParkingSpot(ParkingSpot spot) async {
-    final db = await database;
+  Future<void> _onCreate(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE parking_spots (
+        id TEXT PRIMARY KEY,
+        name TEXT,
+        position_lat REAL,
+        position_lng REAL,
+        car_positions TEXT,
+        booked_positions TEXT,
+        image_path TEXT
+      )
+    ''');
+  }
 
+  // lib/helpers/database_helper.dart
+
+// lib/helpers/database_helper.dart
+
+Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+  List<String> existingColumns = await _getExistingColumns(db, 'parking_spots');
+
+  if (!existingColumns.contains('image_path')) {
+    await db.execute('ALTER TABLE parking_spots ADD COLUMN image_path TEXT');
+  }
+  if (!existingColumns.contains('booked_positions')) {
+    await db.execute('ALTER TABLE parking_spots ADD COLUMN booked_positions TEXT');
+  }
+}
+
+// Helper method to get existing columns
+Future<List<String>> _getExistingColumns(Database db, String tableName) async {
+  var result = await db.rawQuery('PRAGMA table_info($tableName)');
+  List<String> columns = [];
+  for (var row in result) {
+    columns.add(row['name'] as String);
+  }
+  return columns;
+}
+
+
+
+  Future<void> saveParkingSpot(ParkingSpot spot) async {
+    final db = await database;
     await db.insert(
       'parking_spots',
-      {
-        'id': spot.id,
-        'name': spot.name,
-        'positionLat': spot.positionLat,
-        'positionLng': spot.positionLng,
-        'carPositions': spot.carPositions.join(';'), // Join list to save as a string
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace, // Replace if exists
+      spot.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> updateParkingSpot(ParkingSpot spot) async {
+    final db = await database;
+    await db.update(
+      'parking_spots',
+      spot.toMap(),
+      where: 'id = ?',
+      whereArgs: [spot.id],
+    );
+  }
+
+  Future<void> deleteParkingSpot(String id) async {
+    final db = await database;
+    await db.delete(
+      'parking_spots',
+      where: 'id = ?',
+      whereArgs: [id],
     );
   }
 
@@ -52,5 +106,20 @@ class DatabaseHelper {
     return List.generate(maps.length, (i) {
       return ParkingSpot.fromMap(maps[i]);
     });
+  }
+
+  Future<ParkingSpot?> getParkingSpotById(String id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'parking_spots',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return ParkingSpot.fromMap(maps.first);
+    }
+
+    return null;
   }
 }
