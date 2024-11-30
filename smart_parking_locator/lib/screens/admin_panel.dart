@@ -108,95 +108,137 @@ class _AdminPanelState extends State<AdminPanel> {
   }
 
   void _addMarker(gmaps.LatLng position) {
-    String markerId = DateTime.now().millisecondsSinceEpoch.toString();
+  String markerId = DateTime.now().millisecondsSinceEpoch.toString();
 
-    setState(() {
-      _markers.add(gmaps.Marker(
-        markerId: gmaps.MarkerId(markerId),
-        position: position,
-        infoWindow: gmaps.InfoWindow(
-          title: 'New Parking Spot',
-          snippet: 'Tap to configure',
-          onTap: () {
-            _configureNewParkingSpot(markerId, position);
-          },
-        ),
-        icon: gmaps.BitmapDescriptor.defaultMarkerWithHue(gmaps.BitmapDescriptor.hueBlue),
-      ));
-    });
-  }
-
-  void _configureNewParkingSpot(String markerId, gmaps.LatLng position) async {
-    String? name = await _showNameInputDialog();
-    if (name == null || name.isEmpty) {
-      return;
-    }
-
-    String? imagePath = await _pickImage();
-    if (imagePath == null) {
-      return;
-    }
-
-    // Create a ParkingSpot object
-    ParkingSpot newSpot = ParkingSpot(
-      id: markerId,
-      name: name,
-      positionLat: position.latitude,
-      positionLng: position.longitude,
-      bookedPositions: [],
-      carPositions: [], // Will be set in reservation screen
-      imagePath: imagePath,
-    );
-
-    // Save the parking spot
-    await Provider.of<ParkingSpotProvider>(context, listen: false).saveParkingSpot(newSpot);
-
-    // Navigate to the reservation creation screen
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ParkingReservationCreationScreen(markerId: markerId),
+  setState(() {
+    _markers.add(gmaps.Marker(
+      markerId: gmaps.MarkerId(markerId),
+      position: position,
+      infoWindow: gmaps.InfoWindow(
+        title: 'New Parking Spot',
+        snippet: 'Tap marker to configure',
       ),
-    );
-  }
+      onTap: () {
+        _configureNewParkingSpot(markerId, position);
+      },
+      icon: gmaps.BitmapDescriptor.defaultMarkerWithHue(gmaps.BitmapDescriptor.hueBlue),
+    ));
+  });
+}
 
-  Future<String?> _showNameInputDialog() async {
-    String? name;
-    await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        String tempName = '';
-        return AlertDialog(
-          title: Text('Enter Parking Spot Name'),
-          content: TextField(
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: 'Parking Spot Name',
+
+    Future<Map<String, String>?> _showNameAndLocalizationInputDialog() async {
+  String? name;
+  String? localization;
+  await showDialog<Map<String, String>>(
+    context: context,
+    builder: (BuildContext context) {
+      String tempName = '';
+      String tempLocalization = '';
+      return AlertDialog(
+        title: Text('Enter Parking Spot Details'),
+        content: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.8,
             ),
-            onChanged: (value) {
-              tempName = value;
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'Parking Spot Name',
+                  ),
+                  onChanged: (value) {
+                    tempName = value;
+                  },
+                ),
+                SizedBox(height: 10), // Add spacing between fields
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Localization (e.g., City)',
+                  ),
+                  onChanged: (value) {
+                    tempLocalization = value;
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop(); // Close the dialog
             },
           ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-            ),
-            TextButton(
-              child: Text('OK'),
-              onPressed: () {
+          TextButton(
+            child: Text('OK'),
+            onPressed: () {
+              if (tempName.isNotEmpty && tempLocalization.isNotEmpty) {
                 name = tempName;
+                localization = tempLocalization;
                 Navigator.of(context).pop(); // Close the dialog
-              },
-            ),
-          ],
-        );
-      },
-    );
-    return name;
+              }
+            },
+          ),
+        ],
+      );
+    },
+  );
+  if (name != null && localization != null) {
+    return {'name': name!, 'localization': localization!};
+  } else {
+    return null;
   }
+}
+
+
+  void _configureNewParkingSpot(String markerId, gmaps.LatLng position) async {
+  Map<String, dynamic>? details = await _showParkingSpotDetailsInputDialog();
+  if (details == null) {
+    return;
+  }
+  String name = details['name'];
+  String localization = details['localization'];
+  String description = details['description'];
+  List<String> features = details['features'];
+
+  String? imagePath = await _pickImage();
+  if (imagePath == null) {
+    return;
+  }
+
+  // Create a ParkingSpot object
+  ParkingSpot newSpot = ParkingSpot(
+    id: markerId,
+    name: name,
+    positionLat: position.latitude,
+    positionLng: position.longitude,
+    bookedPositions: [],
+    carPositions: [], // Will be set in reservation screen
+    imagePath: imagePath,
+    localization: localization,
+    description: description,
+    features: features,
+  );
+
+  // Save the parking spot
+  await Provider.of<ParkingSpotProvider>(context, listen: false).saveParkingSpot(newSpot);
+
+  // Navigate to the reservation creation screen
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => ParkingReservationCreationScreen(markerId: markerId),
+    ),
+  );
+}
+
+
+ 
 
   Future<String?> _pickImage() async {
     final picker = ImagePicker();
@@ -296,6 +338,136 @@ void _showParkingSpotImageDialog(ParkingSpot spot) {
     },
   );
 }
+Future<Map<String, dynamic>?> _showParkingSpotDetailsInputDialog() async {
+  String? name;
+  String? localization;
+  String? description;
+  List<String> features = [];
+
+  await showDialog<Map<String, dynamic>>(
+    context: context,
+    builder: (BuildContext context) {
+      String tempName = '';
+      String tempLocalization = '';
+      String tempDescription = '';
+      String tempFeature = '';
+      List<String> tempFeatures = [];
+
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text('Enter Parking Spot Details'),
+            content: Container(
+              width: double.maxFinite,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'Parking Spot Name',
+                      ),
+                      onChanged: (value) {
+                        tempName = value;
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Localization (e.g., City)',
+                      ),
+                      onChanged: (value) {
+                        tempLocalization = value;
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Description',
+                      ),
+                      maxLines: 3,
+                      onChanged: (value) {
+                        tempDescription = value;
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Add Feature',
+                      ),
+                      onChanged: (value) {
+                        tempFeature = value;
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (tempFeature.isNotEmpty) {
+                          setState(() {
+                            tempFeatures.add(tempFeature);
+                            tempFeature = '';
+                          });
+                        }
+                      },
+                      child: Text('Add Feature'),
+                    ),
+                    SizedBox(height: 10),
+                    // Display the list of added features with bounded height
+                    Container(
+                      height: 100, // Set a fixed height
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: tempFeatures.length,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            title: Text(tempFeatures[index]),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text('Cancel'),
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+              ),
+              TextButton(
+                child: Text('OK'),
+                onPressed: () {
+                  if (tempName.isNotEmpty && tempLocalization.isNotEmpty) {
+                    name = tempName;
+                    localization = tempLocalization;
+                    description = tempDescription;
+                    features = tempFeatures;
+                    Navigator.of(context).pop(); // Close the dialog
+                  }
+                },
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+
+  if (name != null && localization != null && description != null) {
+    return {
+      'name': name!,
+      'localization': localization!,
+      'description': description!,
+      'features': features,
+    };
+  } else {
+    return null;
+  }
+}
+
 
 
   @override

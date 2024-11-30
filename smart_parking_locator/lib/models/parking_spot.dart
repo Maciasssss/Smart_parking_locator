@@ -2,14 +2,45 @@
 
 import 'dart:convert';
 
+class BookedPosition {
+  final String position;
+  final DateTime startTime;
+  final int durationHours;
+
+  BookedPosition({
+    required this.position,
+    required this.startTime,
+    required this.durationHours,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'position': position,
+      'startTime': startTime.toIso8601String(),
+      'durationHours': durationHours,
+    };
+  }
+
+  factory BookedPosition.fromMap(Map<String, dynamic> map) {
+    return BookedPosition(
+      position: map['position'],
+      startTime: DateTime.parse(map['startTime']),
+      durationHours: map['durationHours'],
+    );
+  }
+}
+
 class ParkingSpot {
   final String id;
-  final String name;
+  String name;
   final double positionLat;
   final double positionLng;
   List<String> carPositions;
-  List<String> bookedPositions; // New field
+  List<BookedPosition> bookedPositions;
   String? imagePath;
+  String localization;
+  String description; // New field
+  List<String> features; // New field
 
   ParkingSpot({
     required this.id,
@@ -19,6 +50,9 @@ class ParkingSpot {
     required this.carPositions,
     required this.bookedPositions,
     this.imagePath,
+    required this.localization,
+    required this.description, // New field
+    required this.features, // New field
   });
 
   Map<String, dynamic> toMap() {
@@ -28,8 +62,11 @@ class ParkingSpot {
       'position_lat': positionLat,
       'position_lng': positionLng,
       'car_positions': jsonEncode(carPositions),
-      'booked_positions': jsonEncode(bookedPositions), // New field
+      'booked_positions': jsonEncode(bookedPositions.map((bp) => bp.toMap()).toList()),
       'image_path': imagePath,
+      'localization': localization,
+      'description': description, // New field
+      'features': jsonEncode(features), // New field
     };
   }
 
@@ -43,9 +80,16 @@ class ParkingSpot {
           ? List<String>.from(jsonDecode(map['car_positions']))
           : [],
       bookedPositions: map['booked_positions'] != null && map['booked_positions'].isNotEmpty
-          ? List<String>.from(jsonDecode(map['booked_positions']))
+          ? (jsonDecode(map['booked_positions']) as List)
+              .map((bpMap) => BookedPosition.fromMap(bpMap))
+              .toList()
           : [],
       imagePath: map['image_path'],
+      localization: map['localization'] ?? '',
+      description: map['description'] ?? '', // New field
+      features: map['features'] != null && map['features'].isNotEmpty
+          ? List<String>.from(jsonDecode(map['features']))
+          : [], // New field
     );
   }
 }
