@@ -12,7 +12,7 @@ class DatabaseHelper {
 
   Database? _database;
 
-  static const int _dbVersion = 5; // Ensure the version is incremented
+  static const int _dbVersion = 5; 
 
   Future<Database> get database async {
     if (_database != null) return _database!;

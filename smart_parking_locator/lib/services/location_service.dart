@@ -1,5 +1,3 @@
-// lib/services/location_service.dart
-
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,21 +12,17 @@ class LocationService {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        // Permissions are denied, return false
         return false;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      // Permissions are denied forever, return false
       return false;
     }
 
-    // Permissions are granted, return true
     return true;
   }
 
-  // Get current location
   Future<Position?> getCurrentLocation() async {
     try {
       return await Geolocator.getCurrentPosition(

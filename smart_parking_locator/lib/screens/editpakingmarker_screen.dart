@@ -1,52 +1,89 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' as latLng;
+import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 
 class EditParkingMarkerScreen extends StatefulWidget {
   final String markerId;
-  final gmaps.LatLng position;
+  final latLng.LatLng position;
 
-  EditParkingMarkerScreen({required this.markerId, required this.position});
+  const EditParkingMarkerScreen({super.key, required this.markerId, required this.position});
 
   @override
-  _EditParkingMarkerScreenState createState() => _EditParkingMarkerScreenState();
+  _EditParkingMarkerScreenState createState() =>
+      _EditParkingMarkerScreenState();
 }
 
 class _EditParkingMarkerScreenState extends State<EditParkingMarkerScreen> {
-  List<gmaps.Marker> _carIcons = []; // Store placed car icons
+  final List<Marker> _carIcons = []; // Store placed car icons
+  final MapController _mapController = MapController();
+  bool _isMapReady = false; 
 
-  void _addCarIcon(gmaps.LatLng position) {
-    String carId = DateTime.now().millisecondsSinceEpoch.toString();
-    gmaps.Marker carMarker = gmaps.Marker(
-      markerId: gmaps.MarkerId(carId),
-      position: position,
-      infoWindow: gmaps.InfoWindow(title: 'Car'),
-    );
+  @override
+  void initState() {
+    super.initState();
 
-    setState(() {
-      _carIcons.add(carMarker); // Add the car icon to the list
+    // Ensure map initialization is deferred
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _isMapReady = true;
+      });
+
+      _mapController.move(widget.position, 14.0);
     });
   }
 
-  @override
+  void _addCarIcon(latLng.LatLng position) {
+    Marker carMarker = Marker(
+      point: position,
+      child: const Icon(Icons.directions_car, color: Colors.blue),
+      width: 30,
+      height: 30,
+    );
+
+    setState(() {
+      _carIcons.add(carMarker); 
+    });
+  }
+
+   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Edit Parking Marker'),
+        title: const Text('Edit Parking Marker'),
       ),
-      body: gmaps.GoogleMap(
-        initialCameraPosition: gmaps.CameraPosition(
-          target: widget.position,
-          zoom: 14.0,
-        ),
-        markers: {..._carIcons, gmaps.Marker(
-          markerId: gmaps.MarkerId(widget.markerId),
-          position: widget.position,
-          infoWindow: gmaps.InfoWindow(title: 'Parking Spot'),
-        )}, // Include the parking marker
-        onTap: (position) {
-          _addCarIcon(position); // Add a car icon on tap
-        },
-      ),
+      body: _isMapReady
+          ? FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                onTap: (tapPosition, point) {
+                  _addCarIcon(point);
+                },
+              ),
+              children: [
+                TileLayer(
+                  tileProvider: const FMTCStore('mapStore').getTileProvider(),
+                  urlTemplate:
+                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  subdomains: const ['a', 'b', 'c'],
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: widget.position,
+                      child: const Icon(Icons.location_on,
+                          color: Colors.red, size: 40),
+                      width: 40,
+                      height: 40,
+                    ),
+                    ..._carIcons,
+                  ],
+                ),
+              ],
+            )
+          : const Center(
+              child: CircularProgressIndicator(),
+            ), 
     );
   }
 }

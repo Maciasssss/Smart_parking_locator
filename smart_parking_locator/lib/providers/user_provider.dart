@@ -5,9 +5,8 @@ class UserProvider with ChangeNotifier {
   final AuthService _authService;
 
   UserProvider(this._authService);
-
-  // Check if the user is an admin
+ 
   Future<bool> checkAdminStatus() async {
-    return await _authService.isAdminUser(); // Check if the user is an admin
+    return await _authService.isAdminUser(); 
   }
 }

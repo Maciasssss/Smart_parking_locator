@@ -1,5 +1,3 @@
-// lib/models/parking_spot.dart
-
 import 'dart:convert';
 
 class BookedPosition {
@@ -39,8 +37,8 @@ class ParkingSpot {
   List<BookedPosition> bookedPositions;
   String? imagePath;
   String localization;
-  String description; // New field
-  List<String> features; // New field
+  String description; 
+  List<String> features; 
 
   ParkingSpot({
     required this.id,
@@ -51,8 +49,8 @@ class ParkingSpot {
     required this.bookedPositions,
     this.imagePath,
     required this.localization,
-    required this.description, // New field
-    required this.features, // New field
+    required this.description, 
+    required this.features, 
   });
 
   Map<String, dynamic> toMap() {
@@ -65,8 +63,8 @@ class ParkingSpot {
       'booked_positions': jsonEncode(bookedPositions.map((bp) => bp.toMap()).toList()),
       'image_path': imagePath,
       'localization': localization,
-      'description': description, // New field
-      'features': jsonEncode(features), // New field
+      'description': description, 
+      'features': jsonEncode(features), 
     };
   }
 
@@ -86,10 +84,10 @@ class ParkingSpot {
           : [],
       imagePath: map['image_path'],
       localization: map['localization'] ?? '',
-      description: map['description'] ?? '', // New field
+      description: map['description'] ?? '', 
       features: map['features'] != null && map['features'].isNotEmpty
           ? List<String>.from(jsonDecode(map['features']))
-          : [], // New field
+          : [], 
     );
   }
 }

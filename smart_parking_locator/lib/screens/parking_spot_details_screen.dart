@@ -1,5 +1,3 @@
-// lib/screens/parking_spot_details_screen.dart
-
 import 'package:flutter/material.dart';
 import '../models/parking_spot.dart';
 import 'dart:io';
@@ -17,8 +15,8 @@ class ParkingSpotDetailsScreen extends StatelessWidget {
         title: Text(parkingSpot.name),
       ),
       body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: SingleChildScrollView( // Added SingleChildScrollView
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView( 
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -30,40 +28,39 @@ class ParkingSpotDetailsScreen extends StatelessWidget {
                   : Container(
                       height: 200,
                       color: Colors.grey[300],
-                      child: Icon(Icons.image, size: 100),
+                      child: const Icon(Icons.image, size: 100),
                     ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 parkingSpot.name,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               Text(
                 'Localization: ${parkingSpot.localization}',
-                style: TextStyle(fontSize: 18),
+                style: const TextStyle(fontSize: 18),
               ),
-              SizedBox(height: 16),
-              Text(
+              const SizedBox(height: 16),
+              const Text(
                 'Description:',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               Text(
                 parkingSpot.description,
-                style: TextStyle(fontSize: 16),
+                style: const TextStyle(fontSize: 16),
               ),
-              SizedBox(height: 16),
-              Text(
+              const SizedBox(height: 16),
+              const Text(
                 'Features:',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               ...parkingSpot.features.map((feature) => ListTile(
-                    leading: Icon(Icons.check),
+                    leading: const Icon(Icons.check),
                     title: Text(feature),
                   )),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Center(
                 child: ElevatedButton(
                   onPressed: () {
-                    // Navigate to booking screen
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -71,7 +68,7 @@ class ParkingSpotDetailsScreen extends StatelessWidget {
                       ),
                     );
                   },
-                  child: Text('Book Now'),
+                  child: const Text('Book Now'),
                 ),
               ),
             ],

@@ -1,18 +1,26 @@
-// lib/main.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'screens/map_screen.dart'; // Import MapScreen
+import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
+import 'package:provider/provider.dart';
+import 'screens/map_screen.dart'; 
 import 'screens/login_screen.dart';
 import 'screens/admin_panel.dart';
-import 'services/auth_service.dart';
-import 'package:provider/provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/parking_spot_provider.dart';
+import 'services/auth_service.dart';
 
 Future<void> main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await FMTCObjectBoxBackend().initialise();
+    const FMTCStore newStore = FMTCStore('mapStore');
+    await newStore.manage.create(); 
+  } catch (e) {
+    print('FMTC initialization failed: $e');
+  }
+
   runApp(MyApp());
 }
 
@@ -28,7 +36,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Smart Parking Locator',
-        home: MapScreen(), // Start with MapScreen
+        home: MapScreen(), 
         routes: {
           '/login': (context) => LoginScreen(),
           '/admin': (context) => AdminPanel(),

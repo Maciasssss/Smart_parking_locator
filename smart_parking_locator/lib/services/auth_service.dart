@@ -1,34 +1,29 @@
 import 'package:flutter/foundation.dart';
 
 class AuthService with ChangeNotifier {
-  bool _isAdmin = false; // Default user role
+  bool _isAdmin = false; 
 
-  // Dummy user data for testing; replace with your actual logic.
-  final List<String> _adminEmails = ['admin']; // Admin email addresses
+  final List<String> _adminEmails = ['admin']; 
 
-  // Simulated login method
   Future<bool> login(String email, String password) async {
-    await Future.delayed(Duration(seconds: 1)); // Simulate network delay
+    await Future.delayed(const Duration(seconds: 1)); 
 
-    // Replace this with your actual authentication logic
     if (_adminEmails.contains(email) && password == 'admin') {
-      _isAdmin = true; // Set admin if the email matches
-      notifyListeners(); // Notify listeners about the change
-      return true; // Login successful
+      _isAdmin = true; 
+      notifyListeners(); 
+      return true; 
     }
-    return false; // Login failed
+    return false; 
   }
 
-  // Simulated logout method
   Future<void> logout() async {
-    await Future.delayed(Duration(seconds: 1)); // Simulate network delay
-    _isAdmin = false; // Reset admin status
-    notifyListeners(); // Notify listeners about the change
+    await Future.delayed(const Duration(seconds: 1)); 
+    _isAdmin = false; 
+    notifyListeners(); 
   }
-
-  // Example method to check admin status asynchronously
+  
   Future<bool> isAdminUser() async {
-    await Future.delayed(Duration(seconds: 1)); // Simulate network delay
-    return _isAdmin; // Return admin status
+    await Future.delayed(const Duration(seconds: 1)); 
+    return _isAdmin;
   }
 }

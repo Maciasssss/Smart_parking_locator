@@ -1,5 +1,3 @@
-// lib/providers/parking_spot_provider.dart
-
 import 'package:flutter/material.dart';
 import '../helpers/database_helper.dart';
 import '../models/parking_spot.dart';
@@ -19,7 +17,6 @@ class ParkingSpotProvider with ChangeNotifier {
   Future<void> loadParkingSpots() async {
     _parkingSpots = await _dbHelper.fetchParkingSpots();
 
-    // Clean up expired bookings
     for (var spot in _parkingSpots) {
       _cleanupExpiredBookings(spot);
     }
@@ -34,21 +31,19 @@ class ParkingSpotProvider with ChangeNotifier {
       DateTime endTime = bookedPosition.startTime.add(Duration(hours: bookedPosition.durationHours));
       return now.isAfter(endTime);
     });
-    // After cleanup, update the spot in the database
     _dbHelper.updateParkingSpot(spot);
   }
 
   /// Saves a parking spot to the database.
   Future<void> saveParkingSpot(ParkingSpot spot) async {
     await _dbHelper.saveParkingSpot(spot);
-    await loadParkingSpots(); // Reload to update the list
+    await loadParkingSpots(); 
   }
 
   /// Retrieves a parking spot by its ID.
   Future<ParkingSpot?> getParkingSpotById(String id) async {
     ParkingSpot? spot = await _dbHelper.getParkingSpotById(id);
     if (spot != null) {
-      // Clean up expired bookings
       _cleanupExpiredBookings(spot);
     }
     return spot;
@@ -90,7 +85,6 @@ class ParkingSpotProvider with ChangeNotifier {
       }
       return false;
     } catch (e) {
-      // No matching spot found
       return false;
     }
   }

@@ -1,5 +1,3 @@
-// lib/screens/parking_spot_booking_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/parking_spot.dart';
@@ -45,7 +43,7 @@ class _ParkingSpotBookingScreenState extends State<ParkingSpotBookingScreen> {
             return Offset(dx, dy);
           } catch (e) {
             print('Error parsing position: $e');
-            return null; // Skip this position if there's an error
+            return null; 
           }
         }).where((pos) => pos != null).cast<Offset>().toList();
       });
@@ -69,17 +67,15 @@ void _bookSpot() async {
       await Provider.of<ParkingSpotProvider>(context, listen: false)
           .bookParkingSpot(_parkingSpot!.id, bookedPosition);
 
-      // Show confirmation
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Spot booked for $hours hour(s)!')),
       );
 
-      // Go back
       Navigator.pop(context);
     }
   } else {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Please select a spot to book.')),
+      const SnackBar(content: Text('Please select a spot to book.')),
     );
   }
 }
@@ -91,7 +87,7 @@ void _bookSpot() async {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Select Booking Duration'),
+          title: const Text('Select Booking Duration'),
           content: DropdownButton<int>(
             value: selectedHours,
             items: List.generate(24, (index) => index + 1)
@@ -108,13 +104,13 @@ void _bookSpot() async {
               onPressed: () {
                 Navigator.pop(context, selectedHours);
               },
-              child: Text('Confirm'),
+              child: const Text('Confirm'),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context, null);
               },
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
           ],
         );
@@ -141,9 +137,9 @@ void _bookSpot() async {
     if (_parkingSpot == null) {
       return Scaffold(
         appBar: AppBar(
-          title: Text('Book Parking Spot'),
+          title: const Text('Book Parking Spot'),
         ),
-        body: Center(
+        body: const Center(
           child: CircularProgressIndicator(),
         ),
       );
@@ -151,7 +147,7 @@ void _bookSpot() async {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Book Parking Spot'),
+        title: const Text('Book Parking Spot'),
       ),
       body: Container(
         color: Colors.white,
@@ -189,14 +185,13 @@ void _bookSpot() async {
                 ),
               );
             }).toList(),
-            // Book button
             Positioned(
               bottom: 20,
               left: 20,
               right: 20,
               child: ElevatedButton(
                 onPressed: _bookSpot,
-                child: Text('Book Selected Spot'),
+                child: const Text('Book Selected Spot'),
               ),
             ),
           ],
