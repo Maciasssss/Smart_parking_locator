@@ -1,7 +1,9 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:provider/provider.dart';
+import 'package:smart_parking_locator/firebase_options.dart';
 import 'screens/map_screen.dart'; 
 import 'screens/login_screen.dart';
 import 'screens/admin_panel.dart';
@@ -12,7 +14,9 @@ import 'services/auth_service.dart';
 Future<void> main() async {
   await dotenv.load(fileName: ".env");
   WidgetsFlutterBinding.ensureInitialized();
-
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   try {
     await FMTCObjectBoxBackend().initialise();
     const FMTCStore newStore = FMTCStore('mapStore');

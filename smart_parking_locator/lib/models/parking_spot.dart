@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class BookedPosition {
   final String position;
   final DateTime startTime;
@@ -14,7 +16,7 @@ class BookedPosition {
   Map<String, dynamic> toMap() {
     return {
       'position': position,
-      'startTime': startTime.toIso8601String(),
+      'startTime': Timestamp.fromDate(startTime),
       'durationHours': durationHours,
     };
   }
@@ -22,11 +24,12 @@ class BookedPosition {
   factory BookedPosition.fromMap(Map<String, dynamic> map) {
     return BookedPosition(
       position: map['position'],
-      startTime: DateTime.parse(map['startTime']),
+      startTime: (map['startTime'] as Timestamp).toDate(),
       durationHours: map['durationHours'],
     );
   }
 }
+
 
 class ParkingSpot {
   final String id;
@@ -37,8 +40,8 @@ class ParkingSpot {
   List<BookedPosition> bookedPositions;
   String? imagePath;
   String localization;
-  String description; 
-  List<String> features; 
+  String description;
+  List<String> features;
 
   ParkingSpot({
     required this.id,
@@ -49,22 +52,23 @@ class ParkingSpot {
     required this.bookedPositions,
     this.imagePath,
     required this.localization,
-    required this.description, 
-    required this.features, 
+    required this.description,
+    required this.features,
   });
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'name': name,
-      'position_lat': positionLat,
-      'position_lng': positionLng,
-      'car_positions': jsonEncode(carPositions),
-      'booked_positions': jsonEncode(bookedPositions.map((bp) => bp.toMap()).toList()),
-      'image_path': imagePath,
+      'positionLat': positionLat,
+      'positionLng': positionLng,
+      'carPositions': carPositions,
+      'bookedPositions':
+          bookedPositions.map((bp) => bp.toMap()).toList(),
+      'imagePath': imagePath,
       'localization': localization,
-      'description': description, 
-      'features': jsonEncode(features), 
+      'description': description,
+      'features': features,
     };
   }
 
@@ -72,22 +76,17 @@ class ParkingSpot {
     return ParkingSpot(
       id: map['id'],
       name: map['name'],
-      positionLat: map['position_lat'],
-      positionLng: map['position_lng'],
-      carPositions: map['car_positions'] != null && map['car_positions'].isNotEmpty
-          ? List<String>.from(jsonDecode(map['car_positions']))
-          : [],
-      bookedPositions: map['booked_positions'] != null && map['booked_positions'].isNotEmpty
-          ? (jsonDecode(map['booked_positions']) as List)
-              .map((bpMap) => BookedPosition.fromMap(bpMap))
-              .toList()
-          : [],
-      imagePath: map['image_path'],
+      positionLat: map['positionLat'],
+      positionLng: map['positionLng'],
+      carPositions: List<String>.from(map['carPositions'] ?? []),
+      bookedPositions: (map['bookedPositions'] as List<dynamic>? ?? [])
+          .map((bpMap) =>
+              BookedPosition.fromMap(bpMap as Map<String, dynamic>))
+          .toList(),
+      imagePath: map['imagePath'],
       localization: map['localization'] ?? '',
-      description: map['description'] ?? '', 
-      features: map['features'] != null && map['features'].isNotEmpty
-          ? List<String>.from(jsonDecode(map['features']))
-          : [], 
+      description: map['description'] ?? '',
+      features: List<String>.from(map['features'] ?? []),
     );
   }
 }

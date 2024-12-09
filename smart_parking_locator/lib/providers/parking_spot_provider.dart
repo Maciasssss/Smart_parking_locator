@@ -7,15 +7,14 @@ class ParkingSpotProvider with ChangeNotifier {
 
   List<ParkingSpot> get parkingSpots => _parkingSpots;
 
-  final DatabaseHelper _dbHelper = DatabaseHelper();
+  final FirestoreHelper _firestoreHelper = FirestoreHelper();
 
   ParkingSpotProvider() {
     loadParkingSpots();
   }
 
-  /// Loads all parking spots from the database.
   Future<void> loadParkingSpots() async {
-    _parkingSpots = await _dbHelper.fetchParkingSpots();
+    _parkingSpots = await _firestoreHelper.fetchParkingSpots();
 
     for (var spot in _parkingSpots) {
       _cleanupExpiredBookings(spot);
@@ -24,45 +23,41 @@ class ParkingSpotProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Cleans up expired bookings for a parking spot.
-  void _cleanupExpiredBookings(ParkingSpot spot) {
+  void _cleanupExpiredBookings(ParkingSpot spot) async {
     DateTime now = DateTime.now();
     spot.bookedPositions.removeWhere((bookedPosition) {
-      DateTime endTime = bookedPosition.startTime.add(Duration(hours: bookedPosition.durationHours));
+      DateTime endTime = bookedPosition.startTime
+          .add(Duration(hours: bookedPosition.durationHours));
       return now.isAfter(endTime);
     });
-    _dbHelper.updateParkingSpot(spot);
+    await _firestoreHelper.updateParkingSpot(spot);
   }
 
-  /// Saves a parking spot to the database.
   Future<void> saveParkingSpot(ParkingSpot spot) async {
-    await _dbHelper.saveParkingSpot(spot);
-    await loadParkingSpots(); 
+    await _firestoreHelper.saveParkingSpot(spot);
+    await loadParkingSpots();
   }
 
-  /// Retrieves a parking spot by its ID.
   Future<ParkingSpot?> getParkingSpotById(String id) async {
-    ParkingSpot? spot = await _dbHelper.getParkingSpotById(id);
+    ParkingSpot? spot = await _firestoreHelper.getParkingSpotById(id);
     if (spot != null) {
       _cleanupExpiredBookings(spot);
     }
     return spot;
   }
 
-  /// Updates an existing parking spot.
   Future<void> updateParkingSpot(ParkingSpot spot) async {
-    await _dbHelper.updateParkingSpot(spot);
+    await _firestoreHelper.updateParkingSpot(spot);
     await loadParkingSpots();
   }
 
-  /// Deletes a parking spot by its ID.
   Future<void> deleteParkingSpot(String id) async {
-    await _dbHelper.deleteParkingSpot(id);
+    await _firestoreHelper.deleteParkingSpot(id);
     await loadParkingSpots();
   }
 
-  /// Books a parking spot by adding a booked position.
-  Future<void> bookParkingSpot(String spotId, BookedPosition bookedPosition) async {
+  Future<void> bookParkingSpot(
+      String spotId, BookedPosition bookedPosition) async {
     ParkingSpot? spot = await getParkingSpotById(spotId);
     if (spot != null) {
       spot.bookedPositions.add(bookedPosition);
@@ -70,14 +65,15 @@ class ParkingSpotProvider with ChangeNotifier {
     }
   }
 
-  /// Checks if a position in a parking spot is booked.
   bool isPositionBooked(String spotId, String position) {
     try {
-      ParkingSpot spot = _parkingSpots.firstWhere((s) => s.id == spotId);
+      ParkingSpot spot =
+          _parkingSpots.firstWhere((s) => s.id == spotId);
       DateTime now = DateTime.now();
       for (var bookedPosition in spot.bookedPositions) {
         if (bookedPosition.position == position) {
-          DateTime endTime = bookedPosition.startTime.add(Duration(hours: bookedPosition.durationHours));
+          DateTime endTime = bookedPosition.startTime
+              .add(Duration(hours: bookedPosition.durationHours));
           if (now.isBefore(endTime)) {
             return true;
           }

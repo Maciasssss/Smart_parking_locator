@@ -41,6 +41,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
 # .gitignore
 .env
 local.properties
+/android/app/google-services.json
+firebase.json
+/lib/firebase_options.dart

@@ -429,47 +429,6 @@ void _launchGoogleMaps(LatLng destination) async {
   }
 }
 
-  Future<void> _downloadRouteToSpot(ParkingSpot spot) async {
-  bool connected = await _isConnected();
-  if (connected) {
-    // Launch Google Maps for navigation
-    _launchGoogleMaps(LatLng(spot.positionLat, spot.positionLng));
-  } else {
-    // Offline navigation logic
-    try {
-      // Fetch the user's current position
-      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-      LatLng userLocation = LatLng(position.latitude, position.longitude);
-
-      // Fetch route to the parking spot
-      List<LatLng>? route = await _fetchRoute(userLocation, LatLng(spot.positionLat, spot.positionLng));
-
-      if (route != null) {
-        await _saveRouteLocally(spot.id, route);
-
-        setState(() {
-          _routePoints = route;
-        });
-
-        // Add a marker for the user's location and zoom to it
-        _zoomToUserLocation();
-
-        // Optionally fit bounds to include the route
-        fitMapToBounds(_mapController, route);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to fetch route')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to fetch route or location: $e')),
-      );
-    }
-  }
-}
-
-
   Future<List<LatLng>?> _fetchRoute(LatLng origin, LatLng destination) async {
     final url =
         'https://router.project-osrm.org/route/v1/driving/${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}?overview=full&geometries=geojson';
